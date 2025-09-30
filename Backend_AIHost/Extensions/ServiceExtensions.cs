@@ -8,10 +8,10 @@ namespace Backend_AIHost.Extensions
     public static class ServiceExtensions
     {
         // Konfiguracja bazy danych
-        public static IServiceCollection ConfigureDatabase(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection ConfigureDatabase(this IServiceCollection services, string connectionString)
         {
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(connectionString));
             return services;
         }
 

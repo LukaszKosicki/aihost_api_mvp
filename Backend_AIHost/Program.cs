@@ -10,12 +10,17 @@ using Backend_AIHost.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration["CONNECTION_STRING"]
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
+
+
+
 // Konfiguracja usług
-builder.Services.ConfigureDatabase(builder.Configuration)
+builder.Services.ConfigureDatabase(connectionString)
        .ConfigureIdentity();
 
 // JWT
-var key = builder.Configuration["Jwt:Key"];
+var key = builder.Configuration["JWT_KEY"] ?? "TajnyKluczDev";
 var issuer = builder.Configuration["Jwt:Issuer"];
 builder.Services.AddAuthentication(options =>
 {

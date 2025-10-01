@@ -34,6 +34,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           export KUBECONFIG=/home/ubuntu/.kube/config
           kubectl delete secret aihost-secrets --ignore-not-found

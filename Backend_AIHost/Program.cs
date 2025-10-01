@@ -77,7 +77,7 @@ app.UseCors(policy =>
 });
 
 // Middleware
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 

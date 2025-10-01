@@ -68,11 +68,6 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
-// Middleware
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-
 app.UseCors(policy =>
 {
     policy.WithOrigins("https://twojadomena.pl", "http://localhost:5173")
@@ -80,6 +75,11 @@ app.UseCors(policy =>
           .AllowAnyMethod()
           .AllowCredentials();
 });
+
+// Middleware
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // SignalR
 app.MapHub<DeploymentHub>("/hubs/deployment");

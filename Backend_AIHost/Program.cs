@@ -68,6 +68,8 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
+app.UseRouting();
+
 app.UseCors(policy =>
 {
     policy.WithOrigins("https://twojadomena.pl", "http://localhost:5173")

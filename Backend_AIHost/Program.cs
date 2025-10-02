@@ -59,7 +59,7 @@ builder.Services.AddScoped<IContainerService, ContainerService>();
 builder.Services.AddScoped<IDockerService, DockerService>();
 
 builder.Services.AddHttpClient<ApiChecker>();
-
+builder.Services.AddCors();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();

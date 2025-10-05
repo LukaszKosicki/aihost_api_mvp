@@ -1,0 +1,11 @@
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y curl gnupg && \
+    curl -fsSL https://ollama.com/install.sh | bash && \
+    apt-get clean
+
+RUN /root/.ollama/bin/ollama pull gemma
+
+EXPOSE 11434
+
+CMD ["/root/.ollama/bin/ollama", "serve"]

@@ -1,0 +1,57 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Checkout kodu
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Build Docker image
+    - name: Build backend Docker image
+      run: |
+        docker build -t aihost_api:latest .   # jeśli Dockerfile w root
+        docker tag aihost_api:latest ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+
+    # 3. Login do GHCR
+    - name: Login to GHCR
+      run: echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+    # 4. Push obrazu do GHCR
+    - name: Push backend image
+      run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+
+    # 5. Utworzenie / aktualizacja Secret w Kubernetes
+    - name: Update Kubernetes Secrets
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        script: |
+          export KUBECONFIG=/home/ubuntu/.kube/config
+          kubectl delete secret aihost-secrets --ignore-not-found
+          kubectl create secret generic aihost-secrets \
+            --from-literal=JWT_KEY=${{ secrets.JWT_KEY }} \
+            --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
+
+    # 6. Deploy obrazu i restart backend
+    - name: Deploy to k3s
+      uses: appleboy/ssh-action@v0.1.6
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        script: |
+          export KUBECONFIG=/home/ubuntu/.kube/config
+          kubectl set image deployment/aihost-api myapi=ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+          kubectl rollout status deployment/aihost-api
+          kubectl rollout restart deployment aihost-api

@@ -16,8 +16,8 @@ jobs:
     # 2. Build Docker image
     - name: Build backend Docker image
       run: |
-        docker build -t aihost_api:latest .   # jeśli Dockerfile w root
-        docker tag aihost_api:latest ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+        docker build -t aihost_api_mvp:latest .   # jeśli Dockerfile w root
+        docker tag aihost_api_mvp:latest ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
 
     # 3. Login do GHCR
     - name: Login to GHCR
@@ -25,7 +25,7 @@ jobs:
 
     # 4. Push obrazu do GHCR
     - name: Push backend image
-      run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+      run: docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api_mvp:latest
 
     # 5. Utworzenie / aktualizacja Secret w Kubernetes
     - name: Update Kubernetes Secrets
@@ -52,6 +52,6 @@ jobs:
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           export KUBECONFIG=/home/ubuntu/.kube/config
-          kubectl set image deployment/aihost-api myapi=ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
+          kubectl set image deployment/aihost-api-mvp myapi=ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api:latest
           kubectl rollout status deployment/aihost-api
           kubectl rollout restart deployment aihost-api

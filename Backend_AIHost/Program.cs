@@ -63,6 +63,7 @@ builder.Services.AddCors();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHttpClient();
+builder.Services.AddHealthChecks();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
@@ -73,6 +74,7 @@ builder.WebHost.UseUrls("http://0.0.0.0:80");
 var app = builder.Build();
 
 app.UseRouting();
+app.MapHealthChecks("/health");
 
 app.UseCors(policy =>
 {

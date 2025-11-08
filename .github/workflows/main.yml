@@ -22,16 +22,16 @@ jobs:
           username: ${{ secrets.GHCR_USERNAME }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      # 3️⃣ Build i push backend image
+      # 3️⃣ Build and push backend Docker image
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: ./
-          file: ./Dockerfile           # jeśli masz np. Dockerfile.backend zmień tu
+          file: ./Dockerfile           # lub Dockerfile.backend, jeśli masz inny
           push: true
           tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api_mvp:latest
 
-      # 4️⃣ Kopiowanie manifestów Kubernetes na VPS
+      # 4️⃣ Copy Kubernetes manifests to VPS
       - name: Copy Kubernetes manifests
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -42,8 +42,8 @@ jobs:
           target: "~/k8s/aihost-mvp/"
           strip_components: 1
 
-      # 5️⃣ Deploy na k3s (SSH)
-            - name: Deploy to k3s on VPS
+      # 5️⃣ Deploy to k3s via SSH
+      - name: Deploy to k3s on VPS
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.SSH_HOST }}

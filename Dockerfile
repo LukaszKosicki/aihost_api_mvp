@@ -24,5 +24,5 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=publish /app/publish .
-EXPOSE 5000
+EXPOSE 80
 ENTRYPOINT ["dotnet", "Backend_AIHost.dll"]

@@ -10,18 +10,18 @@ using Backend_AIHost.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Pobranie connection stringa i JWT_KEY z sekretów/kontenera
 var connectionString = builder.Configuration["CONNECTION_STRING"]
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 
-
+var key = builder.Configuration["JWT_KEY"] ?? builder.Configuration["Jwt:Key"];
+var issuer = builder.Configuration["Jwt:Issuer"];
 
 // Konfiguracja usług
 builder.Services.ConfigureDatabase(connectionString)
        .ConfigureIdentity();
 
 // JWT
-var key = builder.Configuration["JWT_KEY"] ?? builder.Configuration["Jwt:Key"];
-var issuer = builder.Configuration["Jwt:Issuer"];
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,7 +45,7 @@ builder.Services.AddAuthentication(options =>
 // SignalR
 builder.Services.AddSignalR();
 
-// Serwisy
+// Inne serwisy
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IVpsService, VpsService>();
@@ -57,46 +57,51 @@ builder.Services.AddScoped<IAdminModelService, AdminModelService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IContainerService, ContainerService>();
 builder.Services.AddScoped<IDockerService, DockerService>();
-
 builder.Services.AddHttpClient<ApiChecker>();
+
+// CORS
 builder.Services.AddCors();
+
+// Kontrolery, OpenAPI i health check
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks();
 
+// Logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
+// Ustawienie portu dla Kubernetes
 builder.WebHost.UseUrls("http://0.0.0.0:80");
 
 var app = builder.Build();
 
+// Routing i middleware
 app.UseRouting();
-app.MapHealthChecks("/health");
 
 app.UseCors(policy =>
 {
-    policy.WithOrigins("https://lk-soft.info", "http://localhost:5173")
+    policy.WithOrigins("https://app.easyhostai.tech", "http://localhost:5173")
           .AllowAnyHeader()
           .AllowAnyMethod()
           .AllowCredentials();
 });
 
-// Middleware
-// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// SignalR
+// Mapowanie SignalR
 app.MapHub<DeploymentHub>("/hubs/deployment");
 app.MapHub<LogHub>("/hubs/log");
+
+// Health check dla Kubernetes
+app.MapHealthChecks("/health");
 
 // Seedowanie danych
 await app.Services.SeedDataAsync();
 
-// OpenAPI
+// OpenAPI tylko w dev
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

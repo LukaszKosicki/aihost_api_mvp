@@ -13,31 +13,25 @@ spec:
       labels:
         app: aihost-api
     spec:
-      imagePullSecrets:
-        - name: ghcr-secret
       containers:
         - name: myapi
           image: ghcr.io/lukaszkosicki/aihost_api_mvp:latest
-          imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 80
           envFrom:
             - secretRef:
                 name: aihost-secrets
-          env:
-            - name: ASPNETCORE_ENVIRONMENT
-              value: "Production"
-            - name: ASPNETCORE_URLS
-              value: "http://+:8080"
           readinessProbe:
             httpGet:
               path: /health
-              port: 8080
-            initialDelaySeconds: 10
+              port: 80
+            initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
-              port: 8080
-            initialDelaySeconds: 20
+              port: 80
+            initialDelaySeconds: 10
             periodSeconds: 20
+            failureThreshold: 3

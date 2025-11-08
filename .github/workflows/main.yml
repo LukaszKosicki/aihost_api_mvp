@@ -1,76 +1,35 @@
-name: Deploy Backend (AIHOST MVP)
+# 5️⃣ Deploy na k3s (SSH)
+- name: Deploy to k3s on VPS
+  uses: appleboy/ssh-action@v1.1.0
+  with:
+    host: ${{ secrets.SSH_HOST }}
+    username: ${{ secrets.SSH_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    script: |
+      set -e
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 
-on:
-  push:
-    branches:
-      - main
+      echo "🧱 Tworzenie namespace, jeśli nie istnieje..."
+      sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+      echo "🔑 Aktualizacja sekretów..."
+      # usuwa stary secret, jeśli istnieje
+      sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
 
-    steps:
-      # 1️⃣ Checkout kodu
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      # tworzy nowy secret z cudzysłowami, żeby zachować cały connection string
+      sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
+        --from-literal=JWT_KEY="${{ secrets.JWT_KEY }}" \
+        --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
 
-      # 2️⃣ Login do GHCR
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
+      echo "🚀 Stosowanie manifestów..."
+      sudo kubectl apply -f ~/k8s/aihost-mvp/backend-deployment.yaml
+      sudo kubectl apply -f ~/k8s/aihost-mvp/backend-service.yaml
+      if [ -f ~/k8s/aihost-mvp/backend-ingress.yaml ]; then
+        sudo kubectl apply -f ~/k8s/aihost-mvp/backend-ingress.yaml
+      fi
 
-      # 3️⃣ Build i push Docker image
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./
-          file: ./Dockerfile           # jeśli masz inny np. Dockerfile.backend — zmień tu
-          push: true
-          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api_mvp:latest
+      echo "♻️ Restart deploymentu..."
+      sudo kubectl -n aihost-mvp rollout restart deployment aihost-api-mvp
+      sudo kubectl -n aihost-mvp rollout status deployment aihost-api-mvp
 
-      # 4️⃣ Kopiowanie manifestów Kubernetes do VPS
-      - name: Copy Kubernetes manifests
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          source: "./k8s/*.yaml"
-          target: "~/k8s/aihost-mvp/"
-          strip_components: 1
-
-      # 5️⃣ Deploy na k3s (SSH)
-      - name: Deploy to k3s on VPS
-        uses: appleboy/ssh-action@v1.1.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            set -e
-            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-
-            echo "🧱 Tworzenie namespace, jeśli nie istnieje..."
-            sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
-
-            echo "🔑 Aktualizacja sekretów..."
-            sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
-            sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
-              --from-literal=JWT_KEY=${{ secrets.JWT_KEY }} \
-              --from-literal=CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
-
-            echo "🚀 Stosowanie manifestów..."
-            sudo kubectl apply -f ~/k8s/aihost-mvp/backend-deployment.yaml
-            sudo kubectl apply -f ~/k8s/aihost-mvp/backend-service.yaml
-            if [ -f ~/k8s/aihost-mvp/backend-ingress.yaml ]; then
-              sudo kubectl apply -f ~/k8s/aihost-mvp/backend-ingress.yaml
-            fi
-
-            echo "♻️ Restart deploymentu..."
-            sudo kubectl -n aihost-mvp rollout restart deployment aihost-api-mvp
-            sudo kubectl -n aihost-mvp rollout status deployment aihost-api-mvp
-
-            echo "✅ Backend został wdrożony pomyślnie!"
+      echo "✅ Backend został wdrożony pomyślnie!"

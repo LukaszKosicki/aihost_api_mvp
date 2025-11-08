@@ -1,34 +1,36 @@
-﻿using Backend_AIHost.Models;
+﻿using System.Threading.Tasks;
+using Backend_AIHost.Models;
 using Backend_AIHost.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 
 [ApiController]
 [Route("[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<AppUser> _userManager;
+    private readonly RoleManager<IdentityRole> _roleManager;
     private readonly IConfiguration _configuration;
     private readonly IAuthService _authService;
 
     public AuthController(UserManager<AppUser> userManager,
-                          IConfiguration configuration, IAuthService authService)
+                          IConfiguration configuration, IAuthService authService, RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _configuration = configuration;
         _authService = authService;
+        _roleManager = roleManager;
     }
 
     [HttpGet("check")]
     [Authorize]
-    public IActionResult Check()
+    public async Task<IActionResult> Check()
     {
-        return Ok(new { loggedIn = true, user = User.Identity?.Name });
+
+        var user = await _userManager.GetUserAsync(User);
+        var roles = await _userManager.GetRolesAsync(user);
+        return Ok(new { loggedIn = true, email = user.Email, role = roles.FirstOrDefault() });
     }
 
     [HttpPost("change-password")]
@@ -61,30 +63,6 @@ public class AuthController : ControllerBase
         var token = await _authService.LoginAsync(dto.Email, dto.Password);
         if (token == null) return Unauthorized();
         return Ok(token);
-    }
-
-
-    private string GenerateJwtToken(IdentityUser user)
-    {
-        var claims = new[]
- {
-    new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-    new Claim(ClaimTypes.NameIdentifier, user.Id), // teraz na pewno trafi do HttpContext.User
-    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-};
-
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"],
-            audience: _configuration["Jwt:Issuer"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(3),
-            signingCredentials: creds);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
 

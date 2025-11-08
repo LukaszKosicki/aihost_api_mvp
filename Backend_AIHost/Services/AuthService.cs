@@ -80,7 +80,8 @@ namespace Backend_AIHost.Services
             new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
-
+            var a = _configuration["JWT_KEY"];
+            var b = _configuration["Jwt:Issuer"];
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_KEY"] ?? _configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

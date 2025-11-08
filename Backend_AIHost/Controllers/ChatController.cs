@@ -1,12 +1,12 @@
-﻿using Backend_AIHost.Data;
-using Backend_AIHost.DTOs.Chat;
+﻿using Backend_AIHost.DTOs.Chat;
 using Backend_AIHost.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend_AIHost.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("[controller]/[action]")]
     public class ChatController : ControllerBase
     {

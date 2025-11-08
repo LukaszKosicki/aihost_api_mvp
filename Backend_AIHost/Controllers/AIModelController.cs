@@ -2,12 +2,13 @@
 using Backend_AIHost.DTOs.AIModel;
 using Backend_AIHost.DTOs.VPS;
 using Backend_AIHost.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend_AIHost.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("[controller]")]
     public class AIModelController : ControllerBase
     {

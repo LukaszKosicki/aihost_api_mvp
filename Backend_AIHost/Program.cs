@@ -19,11 +19,8 @@ var connectionString = builder.Configuration["CONNECTION_STRING"]
 builder.Services.ConfigureDatabase(connectionString)
        .ConfigureIdentity();
 
-Console.WriteLine(builder.Configuration["JWT_KEY"] ?? "TwojSuperSekretnyKluczJWT");
-Console.WriteLine($"Issuer: {builder.Configuration["Jwt:Issuer"]}");
-
 // JWT
-var key = builder.Configuration["JWT_KEY"] ?? "Jwt:Key";
+var key = builder.Configuration["JWT_KEY"] ?? builder.Configuration["Jwt:Key"];
 var issuer = builder.Configuration["Jwt:Issuer"];
 builder.Services.AddAuthentication(options =>
 {

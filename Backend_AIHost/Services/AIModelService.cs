@@ -11,7 +11,6 @@ using Backend_AIHost.Services.Interfaces;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Renci.SshNet;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Backend_AIHost.Services
 {

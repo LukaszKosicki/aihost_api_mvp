@@ -16,45 +16,47 @@ namespace Backend_AIHost.Services
 
         public async Task HandleLogShell(SshClient client, string command, string connectionId, CancellationToken cancellationToken = default)
         {
-            try
+            using (var cmd = client.CreateCommand(command))
             {
-                using (var stream = client.CreateShellStream("xterm", 80, 24, 800, 600, 1024))
-                using (var reader = new StreamReader(stream))
+                var asyncResult = cmd.BeginExecute();
+                using (var output = new StreamReader(cmd.OutputStream))
+                using (var error = new StreamReader(cmd.ExtendedOutputStream))
                 {
-                    var buffer = new char[1024];
-
-                    // Uruchamiamy komendę w shellu
-                    stream.WriteLine(command);
-
-                    while (client.IsConnected && !cancellationToken.IsCancellationRequested)
+                    char[] buffer = new char[1024];
+                    while (!asyncResult.IsCompleted && !cancellationToken.IsCancellationRequested)
                     {
-                        // Jeśli jest coś do odczytania
-                        while (stream.DataAvailable)
+                        while (!output.EndOfStream && output.Peek() >= 0)
                         {
-                            int bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length);
-                            if (bytesRead > 0)
+                            int read = await output.ReadAsync(buffer, 0, buffer.Length);
+                            if (read > 0)
                             {
-                                var output = new string(buffer, 0, bytesRead);
-
-                                foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-                                {
+                                string text = new string(buffer, 0, read);
+                                foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
                                     await SendLog(connectionId, line.Trim());
-                                }
                             }
                         }
 
-                        await Task.Delay(50, cancellationToken);
+                        while (!error.EndOfStream && error.Peek() >= 0)
+                        {
+                            int read = await error.ReadAsync(buffer, 0, buffer.Length);
+                            if (read > 0)
+                            {
+                                string text = new string(buffer, 0, read);
+                                foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                                    await SendLog(connectionId, "[ERROR] " + line.Trim());
+                            }
+                        }
+
+                        await Task.Delay(200, cancellationToken);
                     }
+
+                    cmd.EndExecute(asyncResult);
+
+                    await SendLog(connectionId, $"[DONE] Command finished with exit status {cmd.ExitStatus}");
                 }
             }
-            finally
-            {
-                if (client.IsConnected)
-                    client.Disconnect();
-
-                client.Dispose();
-            }
         }
+
 
         public async Task HandleLog(SshCommand cmd, string connectionId, CancellationToken cancellationToken = default)
         {

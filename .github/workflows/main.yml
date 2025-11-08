@@ -57,11 +57,11 @@ jobs:
             sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
 
             echo "🔑 Aktualizacja sekretów..."
-            sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
-            sudo kubectl create secret generic aihost-secrets \
+            sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
               --from-literal=JWT_KEY=${{ secrets.JWT_KEY }} \
               --from-literal=CONNECTION_STRING=${{ secrets.CONNECTION_STRING }} \
-              --namespace=aihost-mvp
+              --dry-run=client -o yaml | sudo kubectl apply -f -
+
 
 
             echo "🚀 Stosowanie manifestów..."

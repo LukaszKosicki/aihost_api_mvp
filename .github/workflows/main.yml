@@ -43,12 +43,15 @@ jobs:
           strip_components: 1
 
       # 5️⃣ Deploy na k3s (SSH)
-      - name: Deploy to k3s on VPS
+            - name: Deploy to k3s on VPS
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          env:
+            JWT_KEY: ${{ secrets.JWT_KEY }}
+            CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
           script: |
             set -e
             export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
@@ -59,8 +62,8 @@ jobs:
             echo "🔑 Aktualizacja sekretów..."
             sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
             sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
-              --from-literal=JWT_KEY="${{ secrets.JWT_KEY }}" \
-              --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
+              --from-literal=JWT_KEY="$JWT_KEY" \
+              --from-literal=CONNECTION_STRING="$CONNECTION_STRING"
 
             echo "🚀 Stosowanie manifestów..."
             sudo kubectl apply -f ~/k8s/aihost-mvp/backend-deployment.yaml

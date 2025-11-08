@@ -57,7 +57,10 @@ jobs:
             sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
 
             echo "🔑 Aktualizacja sekretów..."
-            sudo kubectl -n aihost-mvp create secret generic aihost-secrets --from-literal=JWT_KEY=${{ secrets.JWT_KEY }} --from-literal=CONNECTION_STRING=${{ secrets.CONNECTION_STRING }} --dry-run=client -o yaml | sudo kubectl apply -f -
+            sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
+            sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
+              --from-literal=JWT_KEY=${{ secrets.JWT_KEY }} \
+              --from-literal=CONNECTION_STRING=${{ secrets.CONNECTION_STRING }}
 
             echo "🚀 Stosowanie manifestów..."
             sudo kubectl apply -f ~/k8s/aihost-mvp/backend-deployment.yaml

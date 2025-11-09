@@ -18,7 +18,7 @@ spec:
               service:
                 name: aihost-api-service
                 port:
-                  number: 8080
+                  number: 80
   tls:
     - hosts:
         - mvp-api.easyhostai.tech

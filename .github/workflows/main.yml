@@ -39,7 +39,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           source: "./k8s/*.yaml"
-          target: "~/k8s/aihost-mvp/"
+          target: "~/k8s/aihost_mvp/"
           strip_components: 1
 
       # 5️⃣ Aktualizacja sekretów i deploy na k3s
@@ -63,10 +63,10 @@ jobs:
               --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
 
             echo "🚀 Stosowanie manifestów..."
-            sudo kubectl apply -f ~/k8s/aihost-mvp/backend-deployment.yaml
-            sudo kubectl apply -f ~/k8s/aihost-mvp/backend-service.yaml
-            if [ -f ~/k8s/aihost-mvp/backend-ingress.yaml ]; then
-              sudo kubectl apply -f ~/k8s/aihost-mvp/backend-ingress.yaml
+            sudo kubectl apply -f ~/k8s/aihost_mvp/backend-deployment.yaml
+            sudo kubectl apply -f ~/k8s/aihost_mvp/backend-service.yaml
+            if [ -f ~/k8s/aihost_mvp/backend-ingress.yaml ]; then
+              sudo kubectl apply -f ~/k8s/aihost_mvp/backend-ingress.yaml
             fi
 
             echo "♻️ Restart deploymentu..."

@@ -60,7 +60,8 @@ jobs:
             sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
             sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
               --from-literal=JWT_KEY="${{ secrets.JWT_KEY }}" \
-              --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
+              --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}" \
+              --from-literal=ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
 
             echo "🚀 Stosowanie manifestów..."
             sudo kubectl apply -f ~/k8s/aihost_mvp/backend-deployment.yaml

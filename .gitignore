@@ -1,0 +1,39 @@
+# Build Folders
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Visual Studio
+.vs/
+.vscode/
+
+# DotNet
+*.dll
+*.exe
+*.log
+*.app
+*.pdb
+
+# ASP.NET Core
+appsettings.*.json
+secrets.json
+
+# Rider
+.idea/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

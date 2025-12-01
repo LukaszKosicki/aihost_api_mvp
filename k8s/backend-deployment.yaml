@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aihost-api-mvp
+  namespace: aihost-mvp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aihost-api
+  template:
+    metadata:
+      labels:
+        app: aihost-api
+    spec:
+      containers:
+        - name: myapi
+          image: ghcr.io/lukaszkosicki/aihost_api_mvp:latest
+          ports:
+            - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: aihost-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: ghcr-secret   # 👈 tutaj dodaj swój secret

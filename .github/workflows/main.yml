@@ -1,0 +1,76 @@
+name: Backend CI/CD (AIHOST MVP)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Log in do GHCR
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USERNAME }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # 3️⃣ Build i push backend image
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ 
+          file: ./Dockerfile           # jeśli Dockerfile ma inną nazwę, zmień tutaj
+          push: true
+          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api_mvp:latest
+
+      # 4️⃣ Kopiowanie manifestów Kubernetes na VPS
+      - name: Copy Kubernetes manifests
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "./k8s/*.yaml"
+          target: "~/k8s/aihost_mvp/"
+          strip_components: 1
+
+      # 5️⃣ Aktualizacja sekretów i deploy na k3s
+      - name: Deploy to k3s on VPS
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+
+            echo "🧱 Tworzenie namespace jeśli nie istnieje..."
+            sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
+
+            echo "🔑 Aktualizacja sekretów..."
+            sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
+            sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
+              --from-literal=JWT_KEY="${{ secrets.JWT_KEY }}" \
+              --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}"
+
+            echo "🚀 Stosowanie manifestów..."
+            sudo kubectl apply -f ~/k8s/aihost_mvp/backend-deployment.yaml
+            sudo kubectl apply -f ~/k8s/aihost_mvp/backend-service.yaml
+            if [ -f ~/k8s/aihost_mvp/backend-ingress.yaml ]; then
+              sudo kubectl apply -f ~/k8s/aihost_mvp/backend-ingress.yaml
+            fi
+
+            echo "♻️ Restart deploymentu..."
+            sudo kubectl -n aihost-mvp rollout restart deployment aihost-api-mvp
+            sudo kubectl -n aihost-mvp rollout status deployment aihost-api-mvp
+
+            echo "✅ Backend został wdrożony pomyślnie!"

@@ -26,8 +26,8 @@ jobs:
       - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./ 
-          file: ./Dockerfile           # jeśli Dockerfile ma inną nazwę, zmień tutaj
+          context: ./
+          file: ./Dockerfile
           push: true
           tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/aihost_api_mvp:latest
 
@@ -56,12 +56,21 @@ jobs:
             echo "🧱 Tworzenie namespace jeśli nie istnieje..."
             sudo kubectl get ns aihost-mvp || sudo kubectl create ns aihost-mvp
 
-            echo "🔑 Aktualizacja sekretów..."
+            echo "🔑 Aktualizacja sekretów aplikacji..."
             sudo kubectl -n aihost-mvp delete secret aihost-secrets --ignore-not-found
             sudo kubectl -n aihost-mvp create secret generic aihost-secrets \
               --from-literal=JWT_KEY="${{ secrets.JWT_KEY }}" \
               --from-literal=CONNECTION_STRING="${{ secrets.CONNECTION_STRING }}" \
               --from-literal=ADMIN_PASSWORD="${{ secrets.ADMIN_PASSWORD }}"
+
+            echo "🔑 Tworzenie/aktualizacja GHCR imagePullSecret..."
+            sudo kubectl create secret docker-registry ghcr-secret \
+              --docker-server=ghcr.io \
+              --docker-username=${{ secrets.GHCR_USERNAME }} \
+              --docker-password=${{ secrets.GHCR_TOKEN }} \
+              --docker-email=email@example.com \
+              -n aihost-mvp \
+              --dry-run=client -o yaml | sudo kubectl apply -f -
 
             echo "🚀 Stosowanie manifestów..."
             sudo kubectl apply -f ~/k8s/aihost_mvp/backend-deployment.yaml
